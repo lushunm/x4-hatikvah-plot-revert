@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Hatikvah Plot Revert — 短縮された Hatikvah プロット導入の復活パッチ
+
+  対象: base game md/story_diplomacy_intro.xml (mdscript name="Story_Diplomacy_Intro"), X4 v9.00。
+
+  Hatikvah「Trade Revolution」プロット導入は 3 つのパートが "Streamline-Skip" で無条件に飛ばされている。
+  本パッチはその 3 つのスキップを解除し、旧・長編プロット導入を丸ごと復活させる。
+
+  【スキップの実体（いずれも $Skip_Pt* 旗は "logic branch flag for debugging"）】
+  - Pt1「The Hatikvah Endeavour」= 医療品の配達任務→報酬の小型貨物船「カリスト センチネル」(ship_arg_s_trans_container_02_b)を恒久譲渡。
+      Skip_Pt1_v2(708) が受諾直後に発火し Pt1_Manager_Conv_1 を cancel、Pt1→Pt2 へ。
+  - Pt4「Chasing Leads」= Scale Plate 容疑者を尾行/観測して諜報（哨戒＋lockbox待伏せ＋警察遭遇）。
+      Pt3_End(4254-) が本来の <signal_cue cue="Pt4_Follow_Ship"/> をコメントアウトし Pt5 へ直行、Pt4 を飛ばす。
+  - Pt7「A Parting Gift」= ギフト工場ステーション生成＋レーザータワー配備(deployablecategory.lasertower)。
+      Pt6_Destroy_Drones_End(7327-) が Pt8 へ直行、Pt7 を飛ばす。
+
+  【本パッチの変更】
+  1. Skip_Pt1_v2 の発火条件を偽固定 → Pt1(配達任務)が正常に走る。
+  2. Pt3_End の遷移先を Pt5_The_Meeting → Pt4_Follow_Ship に戻す → Pt4 が走る（Pt4 の末尾が Pt5 を signal）。
+  3. Pt6_Destroy_Drones_End の遷移先を Pt8_TheAgreement → Pt7_Station_Defences に戻す → Pt7 が走る（Pt7 の末尾が Pt8 を signal）。
+  $Skip_Pt4/$Skip_Pt7 はどこからも参照されない不使用旗なので、下流に skip 専用分岐は無い（各パートの正規 end 遷移がそのまま生きる）。
+  $Skip_Pt1 のみ Pt2 会話が参照するが、発火自体を止めるので旗は立たず（＝非スキップ側の分岐が選ばれる）問題ない。
+
+  ※新規ゲーム専用。進行中セーブは対象外。検証状況は NOTES.md 参照。
+-->
+<diff>
+  <!-- (1) Pt1: Skip_Pt1_v2 の条件を偽固定。検証済み(2026-07-05): 読込＋diff適用＋Pt1(配達任務)復活を確認。 -->
+  <replace sel="//cue[@name='Skip_Pt1_v2']/conditions/check_any">
+    <check_value value="false"/>
+  </replace>
+
+  <!-- (2) Pt4: Pt3_End の遷移先を Pt5 → Pt4 へ戻す（開発者がコメントアウトした本来の signal を復元）。 -->
+  <replace sel="//cue[@name='Pt3_End']/actions/signal_cue[@cue='Pt5_The_Meeting']/@cue">Pt4_Follow_Ship</replace>
+
+  <!-- (3) Pt7: Pt6_Destroy_Drones_End の遷移先を Pt8 → Pt7 へ戻す。 -->
+  <replace sel="//cue[@name='Pt6_Destroy_Drones_End']/actions/signal_cue[@cue='Pt8_TheAgreement']/@cue">Pt7_Station_Defences</replace>
+</diff>
